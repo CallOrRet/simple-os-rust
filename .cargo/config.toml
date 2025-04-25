@@ -1,9 +1,9 @@
-[build]
-target = "x86_64.json"
-
 [unstable]
-build-std = ["core", "compiler_builtins", "alloc"]
+build-std = ["core", "alloc", "compiler_builtins"]
 build-std-features = ["compiler-builtins-mem"]
+
+[build]
+target = "x86_64-simple_os.json"
 
 [target.'cfg(target_os = "none")']
 runner = "bootimage runner"

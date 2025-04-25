@@ -7,10 +7,10 @@ const BUFFER_WIDTH: usize = 80;
 const BUFFER_HEIGHT: usize = 25;
 
 lazy_static! {
-    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
-        column_position: 0,
-        color_code: ColorCode::new(Color::Yellow, Color::Black),
+    pub static ref VGA: Mutex<Device> = Mutex::new(Device {
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+        default_color: ColorCode::new(Color::Yellow, Color::Black),
+        column_position: 0,
     });
 }
 
@@ -28,7 +28,7 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    VGA.lock().write_fmt(args).unwrap();
 }
 
 #[allow(dead_code)]
@@ -75,13 +75,13 @@ struct Buffer {
     chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-pub struct Writer {
+pub struct Device {
     column_position: usize,
-    color_code: ColorCode,
+    default_color: ColorCode,
     buffer: &'static mut Buffer,
 }
 
-impl Writer {
+impl Device {
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
@@ -93,7 +93,7 @@ impl Writer {
                 let row = BUFFER_HEIGHT - 1;
                 let col = self.column_position;
 
-                let color_code = self.color_code;
+                let color_code = self.default_color;
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
                     color_code,
@@ -126,7 +126,7 @@ impl Writer {
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
-            color_code: self.color_code,
+            color_code: self.default_color,
         };
         for col in 0..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
@@ -134,7 +134,7 @@ impl Writer {
     }
 }
 
-impl fmt::Write for Writer {
+impl fmt::Write for Device {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.write_string(s);
         Ok(())

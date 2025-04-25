@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple-os-rust"
+name = "simple_os"
 version = "0.1.0"
 dependencies = [
  "bootloader",
