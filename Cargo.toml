@@ -18,3 +18,23 @@ bootloader = { version = "0.9" }
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
+
+[package.metadata.bootimage]
+run-args = [
+  "-vnc",
+  ":0,password=on",
+  "-monitor",
+  "stdio",
+  "-display",
+  "none",
+  "-audiodev",
+  "none,id=none",
+]
+test-args = [
+  "-device",
+  "isa-debug-exit,iobase=0xf4,iosize=0x04",
+  "-serial",
+  "stdio",
+  "-display",
+  "none",
+]
