@@ -9,7 +9,7 @@ const BUFFER_HEIGHT: usize = 25;
 lazy_static! {
     pub static ref VGA: Mutex<Device> = Mutex::new(Device {
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-        default_color: ColorCode::new(Color::Yellow, Color::Black),
+        default_color: ColorCode::new(Color::White, Color::Black),
         column_position: 0,
     });
 }
@@ -27,8 +27,10 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use core::fmt::Write;
-    VGA.lock().write_fmt(args).unwrap();
+    use fmt::Write;
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        VGA.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[allow(dead_code)]
@@ -155,10 +157,14 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
+    use fmt::Write;
     let s = "Some test string that fits on a single line";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = VGA.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_character), c);
-    }
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let mut vga = VGA.lock();
+        writeln!(vga, "\n{s}").expect("writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = vga.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    });
 }

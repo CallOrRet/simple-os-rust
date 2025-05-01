@@ -4,24 +4,28 @@
 #![test_runner(simpleos::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+use simpleos::gdt;
+use simpleos::interrupts;
 use simpleos::println;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() -> ! {
-    println!("Hello World{}", "!");
+    gdt::init();
+    interrupts::init();
 
     #[cfg(test)]
     test_main();
 
-    loop {}
+    println!("Hello World!");
+
+    simpleos::halt();
 }
 
-/// This function is called on panic.
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
+    simpleos::halt();
 }
 
 #[cfg(test)]
